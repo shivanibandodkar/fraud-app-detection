@@ -1,0 +1,1 @@
+call project_env\Scripts\activate.bat && cd FAD & python -m senti_test.py
