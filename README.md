@@ -1,1 +1,3 @@
-# fraud-app-detection
+#Data Preparation	
+
+The Libraries used for data preparation are pandas, CSV, NumPy and NLTK. Pandas is the most popular Python library that is used for data analysis. The CSV module implements classes to read and write tabular data in CSV format without knowing the precise details of the CSV format. Numpy is a general-purpose array-processing package. It provides a high-performance multidimensional array object and tools for working with these arrays. NLTK is used for building Python programs to work with human language data along with text processing libraries for classification, tokenization, stemming, tagging, parsing and semantic reasoning. The training and testing dataset are in CSV file format. The values of the dataset are then put into a data frame. A data frame is a two-dimensional (2-D) data structure defined in pandas which consists of rows and columns. 
