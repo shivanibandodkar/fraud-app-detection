@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Fraud App Detection</title>
+    <link href="style.css" rel="stylesheet">
+    <script src="js/status.js"></script>
+    <script type="text/javascript" src="/eel.js"></script>
+    <script src="Chartjs/dist/Chart.min.js"></script>
+    <script src="Chartjs/samples/utils.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+    <link href="css/style.css" rel="stylesheet">
+    <!--Favicon-->
+    <link rel="icon" href="img/favicon.ico" type="image/x-icon"/>
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
+  </head>
+  <body>
+    
+    <section class="wellcome_area clearfix" id="home">
+      <div class="container h-100">
+        <div id="status" class="status on"><span id="status-text">Online</span></div>
+        <div class="row h-100 align-items-center">
+          <div class="col" width="100%">
+            <div class="wellcome-heading">
+              <h2>Fraud App Detection</h2>
+              <h3>FAD</h3>
+              <p>Get to know about an app before you download it.</p>
+            </div>
+            <div class="get-start-area">
+              <form class="form-inline" id="searchForm" autocomplete="off">
+                <div class="autocomplete" style="width: 650px;">
+                  <input type="text" id="myInput" class="form-control email" placeholder="Enter App Name">
+                  <input type="button" id="myInpBtn" class="submit" value="Detect App Details" onclick="scrapReview()">
+                  <button type="button" id="refreshpage" onclick="location.reload();">
+                    <span aria-hidden="true">Clear</span>
+                  </button>
+                  <img id="app-icon" src="img/google_play.png">
+                  <div id="loader-icon" class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+                  <div id ="Stars" class="Stars" style="--rating: 0;"></div>
+                  
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="welcome-thumb">
+        <div id="canvas-holder">
+          <canvas id="chart-area"></canvas>
+        </div>
+      </div>
+    </section>
+    <div>
+      <div class="container">
+        <div class="row">
+          <div class="col-4">
+            <h4>REVIEWS SENTIMENT POLARITY</h4>
+            <p id="polarityShow" style="font-size: 20px;">0.0</p>
+          </div>
+          <div class="col-8">
+            <h4>RECOMMENDATION</h4>
+            <div class="progress">
+              <div id="myProgress" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100"></div>
+              <script>
+                var progressValue = 0;
+                function progress(progressValue) {
+                  document.getElementById("myProgress").style.width = progressValue[0]+"%";
+                  if(progressValue[0]<50){
+                    document.getElementById("myProgress").classList.remove("bg-success");
+                    document.getElementById("myProgress").classList.remove("bg-warning");
+                    document.getElementById("myProgress").classList.add("bg-danger");
+                    document.getElementById("recResult").innerHTML = "Strongly Don't";
+                  }else if(progressValue[0]>50 && progressValue<65){
+                    document.getElementById("myProgress").classList.remove("bg-success");
+                    document.getElementById("myProgress").classList.add("bg-warning");
+                    document.getElementById("myProgress").classList.remove("bg-danger");
+                    document.getElementById("recResult").innerHTML = "";
+                  }else{
+                    document.getElementById("myProgress").classList.add("bg-success");
+                    document.getElementById("myProgress").classList.remove("bg-warning");
+                    document.getElementById("myProgress").classList.remove("bg-danger");
+                    document.getElementById("recResult").innerHTML = "Surely";
+                  }
+
+                  document.getElementById("polarityShow").innerHTML = progressValue[1];
+
+                }
+              </script>
+            </div>
+            <p style="padding-top: 10px;font-size: 20px;">
+              As per above user review analysis of <span id="appname" style="font-weight: bold;">App</span>, 
+              we <span id="recResult" style="font-weight: bold;"></span> recommend you to download the app.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+    var apps = [];
+    function autocomplete(inp, arr) {
+    /*the autocomplete function takes two arguments,
+    the text field element and an array of possible autocompleted values:*/
+    var currentFocus;
+    /*execute a function when someone writes in the text field:*/
+    inp.addEventListener("keydown", function(e) {
+      if(e.ctrlKey){
+        searchApp(this);
+      }
+    var a, b, i, val = this.value;
+    /*close any already open lists of autocompleted values*/
+    closeAllLists();
+    if (!val) { return false;}
+    currentFocus = -1;
+    /*create a DIV element that will contain the items (values):*/
+    a = document.createElement("DIV");
+    a.setAttribute("id", this.id + "autocomplete-list");
+    a.setAttribute("class", "autocomplete-items");
+    /*append the DIV element as a child of the autocomplete container:*/
+    this.parentNode.appendChild(a);
+    /*for each item in the array...*/
+    for (i = 0; i < arr.length; i++) {
+    /*check if the item starts with the same letters as the text field value:*/
+    if (arr[i][0].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+    /*create a DIV element for each matching element:*/
+    b = document.createElement("DIV");
+    b.innerHTML = "<p><img class='app-search-icon' src='"+arr[i][1]+"'>";
+      /*make the matching letters bold:*/
+      b.innerHTML += "<strong>" + arr[i][0].substr(0, val.length) + "</strong>";
+      b.innerHTML += arr[i][0].substr(val.length);
+      b.innerHTML += "<p class='search-app-developer'>"+arr[i][3]+"</p></p>";
+      /*insert a input field that will hold the current array item's value:*/
+      b.innerHTML += "<input id='package-name' type='hidden' value='" + arr[i][2] + "'>";
+      /* Setg App Icon*/
+      b.innerHTML += "<input id='app-icon-selected' type='hidden' value='" + arr[i][1] + "'>";
+      b.innerHTML += "<input id='appnamet' type='hidden' value='" + arr[i][0] + "'>";
+      /*execute a function when someone clicks on the item value (DIV element):*/
+      b.addEventListener("click", function(e) {
+      /*insert the value for the autocomplete text field:*/
+      inp.value = this.getElementsByTagName("input")[0].value;
+      document.getElementById("app-icon").src = this.getElementsByTagName("input")[1].value;
+      document.getElementById("appname").innerHTML = this.getElementsByTagName("input")[2].value;
+      //document.getElementById("app-icon").src = this.getElementsByTagName("input")[1].value;
+      /*close the list of autocompleted values,
+      (or any other open lists of autocompleted values:*/
+      while(this.hasChildNodes()){
+        this.removeChild(this.firstChild);
+      }
+      arr = [];
+      closeAllLists();
+      });
+      a.appendChild(b);
+      }
+      }
+      });
+      /*execute a function presses a key on the keyboard:*/
+      inp.addEventListener("keydown", function(e) {
+      var x = document.getElementById(this.id + "autocomplete-list");
+      if (x) x = x.getElementsByTagName("div");
+      if (e.keyCode == 40) {
+      /*If the arrow DOWN key is pressed,
+      increase the currentFocus variable:*/
+      currentFocus++;
+      /*and and make the current item more visible:*/
+      addActive(x);
+      } else if (e.keyCode == 38) { //up
+      /*If the arrow UP key is pressed,
+      decrease the currentFocus variable:*/
+      currentFocus--;
+      /*and and make the current item more visible:*/
+      addActive(x);
+      } else if (e.keyCode == 13) {
+      /*If the ENTER key is pressed, prevent the form from being submitted,*/
+      e.preventDefault();
+      if (currentFocus > -1) {
+      /*and simulate a click on the "active" item:*/
+      if (x) x[currentFocus].click();
+      }
+      }
+      });
+      function addActive(x) {
+      /*a function to classify an item as "active":*/
+      if (!x) return false;
+      /*start by removing the "active" class on all items:*/
+      removeActive(x);
+      if (currentFocus >= x.length) currentFocus = 0;
+      if (currentFocus < 0) currentFocus = (x.length - 1);
+      /*add class "autocomplete-active":*/
+      x[currentFocus].classList.add("autocomplete-active");
+      }
+      function removeActive(x) {
+      /*a function to remove the "active" class from all autocomplete items:*/
+      for (var i = 0; i < x.length; i++) {
+      x[i].classList.remove("autocomplete-active");
+      }
+      }
+      function closeAllLists(elmnt) {
+      /*close all autocomplete lists in the document,
+      except the one passed as an argument:*/
+      var x = document.getElementsByClassName("autocomplete-items");
+      for (var i = 0; i < x.length; i++) {
+      if (elmnt != x[i] && elmnt != inp) {
+      x[i].parentNode.removeChild(x[i]);
+      }
+      }
+      }
+      /*execute a function when someone clicks in the document:*/
+      document.addEventListener("click", function (e) {
+      closeAllLists(e.target);
+      });
+      }
+      </script>
+      <script>autocomplete(document.getElementById("myInput"), apps);</script>
+      <script>
+      var config = {
+            type: 'doughnut',
+            data: {
+              datasets: [{
+                data: [50,50],
+                backgroundColor: [
+                  window.chartColors.yellow,
+                  window.chartColors.red,
+                ],
+                label: 'App Review Sentiment'
+              }],
+              labels: [
+                'Positive',
+                'Negative'
+              ]
+            },
+            options: {
+              responsive: true,
+      legend: {
+      labels: {
+      fontColor: "white",
+      fontSize: 15
+      }
+      },
+              title: {
+                display: true,
+                text: 'App reviews Analysis',
+      fontColor: 'white',
+      fontSize: 20
+              },
+              animation: {
+                animateScale: true,
+                animateRotate: true
+      },
+      tooltips: {
+      callbacks: {
+      label: function(tooltipItem, data) {
+      var indice = tooltipItem.index;
+      return data.datasets[0].data[indice] + " Users commented " + data.labels[indice] + ' reviews.';
+      }
+      }
+      }
+      }
+          };
+          window.onload = function() {
+            var ctx = document.getElementById('chart-area').getContext('2d');
+            window.myDoughnut = new Chart(ctx, config);
+          };
+          function updateChart(sent_data){
+      var star_rate = 0;
+            config.data.datasets.forEach(function(dataset) {
+      dataset.data = sent_data;
+      star_rate = (sent_data[0]/(sent_data[0]+sent_data[1]))*100;
+      });
+      document.getElementById("chart-area").style.visibility = "visible";
+      window.myDoughnut.update();
+      document.getElementById("loader-icon").style.visibility = "hidden";
+      document.getElementById("Stars").style.setProperty('--rating',star_rate*(5/100));
+          };
+      </script>
+    </body>
+  </html>
